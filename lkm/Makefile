@@ -1,7 +1,5 @@
-obj-m += hypervisor2.o
-
 all:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	make -C src all
 
 clean:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	make -C src clean
