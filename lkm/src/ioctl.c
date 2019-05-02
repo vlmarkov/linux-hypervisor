@@ -24,7 +24,7 @@ static int hypervisor2_ioctl_cpu_id_get(unsigned long arg)
 
     if (copy_to_user(_cpuid, &cpuid, sizeof(hypervisor2_cpuid_t)))
     {
-        pr_warn(KERN_INFO "[%s] Unable to copy to userspace\n", DEVICE_NAME);
+        pr_warn(KERN_INFO "[%s] Unable to copy to userspace!\n", DEVICE_NAME);
         ret = -EFAULT;
     }
 
