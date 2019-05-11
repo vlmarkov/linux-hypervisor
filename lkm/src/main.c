@@ -9,6 +9,7 @@
 #include <linux/kernel.h>
 
 #include "../include/private/ioctl.h"
+#include "../include/private/vmx.h"
 #include "../include/private/io.h"
 
 #include "../include/ioctl.h"
@@ -27,8 +28,7 @@ static struct file_operations hypervisor2_fops =
     .release        = hypervisor2_release,
 };
 
-// Initialize the module - Register the character device 
-static int __init hypervisor2_init(void)
+static int hypervisor2_char_device_create(void)
 {
     int ret = 0;
     struct device *dev_ret = NULL;
@@ -60,6 +60,29 @@ static int __init hypervisor2_init(void)
         return PTR_ERR(dev_ret);
     }
 
+    return 0;
+}
+
+// Initialize the module - Register the character device 
+static int __init hypervisor2_init(void)
+{
+    if (hypervisor2_char_device_create() != 0)
+    {
+        class_destroy(hypervisor2_class);
+        cdev_del(&hypervisor2_cdev);
+        unregister_chrdev_region(hypervisor2_dev, DEVICE_MINOR_CNT);
+        return -EFAULT;
+    }
+
+    if (hypervisor2_vmx_init() != 0)
+    {
+        device_destroy(hypervisor2_class, hypervisor2_dev);
+        class_destroy(hypervisor2_class);
+        cdev_del(&hypervisor2_cdev);
+        unregister_chrdev_region(hypervisor2_dev, DEVICE_MINOR_CNT);
+        return -EFAULT;
+    }
+
     printk(KERN_INFO "[%s] Init!\n", DEVICE_NAME);
     return 0;
 }
@@ -67,6 +90,8 @@ static int __init hypervisor2_init(void)
 // Exit - unregister the appropriate file from /proc 
 static void __exit hypervisor2_exit(void)
 {
+    hypervisor2_vmx_free();
+
     device_destroy(hypervisor2_class, hypervisor2_dev);
     class_destroy(hypervisor2_class);
     cdev_del(&hypervisor2_cdev);
