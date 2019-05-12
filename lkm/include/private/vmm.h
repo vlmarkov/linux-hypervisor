@@ -1,7 +1,5 @@
 #pragma once
 
-#include <linux/module.h>
-
 typedef struct vmpage
 {
     // Public fields
@@ -57,8 +55,8 @@ typedef struct vmm
     vcpu_t *vcpu;
 } vmm_t;
 
-int hypervisor2_vmm_init(void);
-int hypervisor2_vmm_free(void);
+int vmm_init(void);
+int vmm_free(void);
 
-void hypervisor2_vmm_start(void *unused);
-void hypervisor2_vmm_stop(void *unused);
+void vmm_start(void *unused);
+void vmm_stop(void *unused);

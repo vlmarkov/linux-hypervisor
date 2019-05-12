@@ -1,3 +1,3 @@
 #pragma once
 
-long hypervisor2_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+int vmm_ioctl_cpu_id_get(unsigned long arg);

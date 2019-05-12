@@ -9,10 +9,10 @@
 
 void ioctl_get_msg(int fd)
 {
-    hypervisor2_cpuid_t cpuid;
-    memset(&cpuid, 0, sizeof(hypervisor2_cpuid_t));
+    vmm_cpuid_t cpuid;
+    memset(&cpuid, 0, sizeof(vmm_cpuid_t));
 
-    int ret_val = ioctl(fd, HYPERVISOR2_IOCTL_GET_CPU_ID, &cpuid);
+    int ret_val = ioctl(fd, VMM_IOCTL_GET_CPU_ID, &cpuid);
     if (ret_val < 0)
     {
         printf ("ioctl_get_msg failed:%d\n", ret_val);

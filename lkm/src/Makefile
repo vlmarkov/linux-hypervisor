@@ -2,7 +2,7 @@ obj-m := hypervisor2.o
 
 hypervisor2-y := main.o \
                  cpu.o \
-                 io.o \
+                 device.o \
                  ioctl.o \
                  vmx.o \
                  vmm.o \

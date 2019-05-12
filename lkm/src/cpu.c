@@ -82,7 +82,7 @@ static inline u32 __cpuid_ecx(u32 leaf, u32 subleaf)
 }
 
 // Find out the number of processor cores on the die
-static int hypervisor2_cpu_intel_cores_get(struct cpuinfo_x86 *c)
+static int vmm_cpu_intel_cores_get(struct cpuinfo_x86 *c)
 {
     unsigned int eax, ebx, ecx, edx;
 
@@ -97,7 +97,7 @@ static int hypervisor2_cpu_intel_cores_get(struct cpuinfo_x86 *c)
         return 1;
 }
 
-void hypervisor2_cpu_id_get(struct cpuinfo_x86 *cpu_info)
+void vmm_cpu_id_get(struct cpuinfo_x86 *cpu_info)
 {
     // Get vendor name
     cpuid(0x00000000,
@@ -116,17 +116,17 @@ void hypervisor2_cpu_id_get(struct cpuinfo_x86 *cpu_info)
         cpu_info->x86_capability[4] = excap;
     }
 
-    cpu_info->booted_cores = hypervisor2_cpu_intel_cores_get(cpu_info);
+    cpu_info->booted_cores = vmm_cpu_intel_cores_get(cpu_info);
     // AMD dosen't support
 }
 
-bool hypervisor2_cpu_vmx_support(void)
+bool vmm_cpu_vmx_support(void)
 {
     u32 ecx = __cpuid_ecx(1, 0);
     return !(ecx & CPUID_1_ECX_VMX);
 }
 
-bool hypervisor2_cpu_vmx_bios_support(void)
+bool vmm_cpu_vmx_bios_support(void)
 {
     u64 feature_control;
 
@@ -141,7 +141,7 @@ bool hypervisor2_cpu_vmx_bios_support(void)
     return true;
 }
 
-int hypervisor2_cpu_vmxon(vcpu_t *vcpu)
+int vmm_cpu_vmxon(vcpu_t *vcpu)
 {
     int ret;
     u64 old_cr4 = __get_cr4();
@@ -162,19 +162,24 @@ int hypervisor2_cpu_vmxon(vcpu_t *vcpu)
     return 0;
 }
 
-void hypervisor2_cpu_vmxoff(vcpu_t *vcpu)
+int vmm_cpu_vmxoff(vcpu_t *vcpu)
 {
-    const int cpu = raw_smp_processor_id();
+    //const int cpu = raw_smp_processor_id();
 
     if (vcpu->our_vmxon && (__vmxoff() != 0))
+    {
         printk(KERN_INFO "VMXOFF failed\n");
+        return -1;
+    }
 
     /* Clear CR4.VMXE if necessary */
     if (!vcpu->old_vmxe)
         __set_cr4(__get_cr4() & ~CR4_VMXE);
+
+    return 0;
 }
 
-int hypervisor2_cpu_vmclear(vcpu_t *vcpu)
+int vmm_cpu_vmclear(vcpu_t *vcpu)
 {
     //const int cpu = raw_smp_processor_id();
     //printk(KERN_INFO "[%s] %s cpu %d\n", DEVICE_NAME, __func__, cpu);
