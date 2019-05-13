@@ -9,7 +9,7 @@ hypervisor2-y := main.o \
                  vmpage.o
 
 all:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/lkm/src modules
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/driver/src modules
 
 clean:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/lkm/src clean
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/driver/src clean

@@ -5,7 +5,7 @@
 #include <unistd.h> 
 #include <sys/ioctl.h>
 
-#include "../lkm/include/ioctl.h"
+#include "../driver/include/ioctl.h"
 
 void ioctl_get_msg(int fd)
 {
