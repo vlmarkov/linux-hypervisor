@@ -1,7 +1,7 @@
 # simple-hypervisor2
 
 Simple Linux Hypervisor type 2 driver
-- supports ```vmxon``` and ```vmxoff``` operarations
+- supports ```vmxon``` and ```vmxoff``` operations
 
 Usefull links:
 - https://rayanfam.com/topics/hypervisor-from-scratch-part-1/
