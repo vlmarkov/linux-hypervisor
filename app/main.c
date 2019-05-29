@@ -9,19 +9,19 @@
 
 void ioctl_get_msg(int fd)
 {
-    vmm_cpuid_t cpuid;
-    memset(&cpuid, 0, sizeof(vmm_cpuid_t));
+    hypervisor_id_t hypervisor_id;
+    memset(&hypervisor_id, 0, sizeof(hypervisor_id_t));
 
-    int ret_val = ioctl(fd, VMM_IOCTL_GET_CPU_ID, &cpuid);
+    int ret_val = ioctl(fd, HYPERVISOR_IOCTL_GET_ID, &hypervisor_id);
     if (ret_val < 0)
     {
         printf ("ioctl_get_msg failed:%d\n", ret_val);
         exit(-1);
     }
 
-    printf("Cores       : %d\n", cpuid.ncores);
-    printf("VMX support : %s\n", cpuid.vmx ? "enable" : "disable");
-    printf("Vendor id   : %s\n", cpuid.vendor_id);
+    printf("Cores       : %d\n", hypervisor_id.ncores);
+    printf("VMX support : %s\n", hypervisor_id.vmx ? "enable" : "disable");
+    printf("Vendor id   : %s\n", hypervisor_id.vendor_id);
     return;
 }
 

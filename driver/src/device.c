@@ -5,63 +5,63 @@
 
 #include "../include/ioctl.h"
 
-static dev_t vmm_dev = 0;
-static struct class *vmm_class = NULL;
-static struct cdev vmm_cdev;
+static dev_t dev = 0;
+static struct class *class = NULL;
+static struct cdev cdev;
 
-static int vmm_device_open(struct inode *inode, struct file *file);
-static int vmm_device_release(struct inode *inode, struct file *file);
-static ssize_t vmm_device_read(struct file *filp, char __user *buf, size_t len, loff_t *off);
-static ssize_t vmm_device_write(struct file *filp, const char __user *buf, size_t len, loff_t *off);
-static long vmm_device_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+static int device_open(struct inode *inode, struct file *file);
+static int device_release(struct inode *inode, struct file *file);
+static ssize_t device_read(struct file *filp, char __user *buf, size_t len, loff_t *off);
+static ssize_t device_write(struct file *filp, const char __user *buf, size_t len, loff_t *off);
+static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
-static struct file_operations vmm_fops =
+static struct file_operations device_fops =
 {
     .owner          = THIS_MODULE,
-    .read           = vmm_device_read,
-    .write          = vmm_device_write,
-    .open           = vmm_device_open,
-    .unlocked_ioctl = vmm_device_ioctl,
-    .release        = vmm_device_release,
+    .read           = device_read,
+    .write          = device_write,
+    .open           = device_open,
+    .unlocked_ioctl = device_ioctl,
+    .release        = device_release,
 };
 
-static int vmm_device_open(
+static int device_open(
     struct inode *inode,
     struct file *file)
 {
-    printk(KERN_INFO "[%s] Open!\n", MODULE_NAME);
+    printk(KERN_INFO "[%s] Open!\n", DEVICE_NAME);
     return 0;
 }
 
-static int vmm_device_release(
+static int device_release(
     struct inode *inode,
     struct file *file)
 {
-    printk(KERN_INFO "[%s] Release!\n", MODULE_NAME);
+    printk(KERN_INFO "[%s] Release!\n", DEVICE_NAME);
     return 0;
 }
 
-static ssize_t vmm_device_read(
+static ssize_t device_read(
     struct file *filp,
     char __user *buf,
     size_t len,
     loff_t *off)
 {
-    printk(KERN_INFO "[%s] Read!\n", MODULE_NAME);
+    printk(KERN_INFO "[%s] Read!\n", DEVICE_NAME);
     return 0;
 }
 
-static ssize_t vmm_device_write(
+static ssize_t device_write(
     struct file *filp,
     const char __user *buf,
     size_t len,
     loff_t *off)
 {
-    printk(KERN_INFO "[%s] Write!\n", MODULE_NAME);
+    printk(KERN_INFO "[%s] Write!\n", DEVICE_NAME);
     return 0;
 }
 
-static long vmm_device_ioctl(
+static long device_ioctl(
     struct file *file,
     unsigned int cmd,
     unsigned long arg)
@@ -70,8 +70,8 @@ static long vmm_device_ioctl(
 
     switch (cmd)
     {
-        case VMM_IOCTL_GET_CPU_ID:
-            ret = vmm_ioctl_cpu_id_get(arg);
+        case HYPERVISOR_IOCTL_GET_ID:
+            ret = ioctl_hypervisor_id_get(arg);
             break;
 
         default:
@@ -81,48 +81,74 @@ static long vmm_device_ioctl(
     return ret;
 }
 
-int vmm_device_init(void)
+int device_init(void)
 {
     int ret = 0;
     struct device *dev_ret = NULL;
-  
-    if ((ret = alloc_chrdev_region(
-        &vmm_dev, DEVICE_MINOR, DEVICE_MINOR_CNT, MODULE_NAME)) < 0)
+
+    // Allocates a range of char device numbers
+    ret = alloc_chrdev_region(&dev, DEVICE_MINOR, DEVICE_MINOR_CNT, DEVICE_NAME);
+    if (ret < 0)
     {
-        return ret;
-    }
- 
-    cdev_init(&vmm_cdev, &vmm_fops);
- 
-    if ((ret = cdev_add(
-        &vmm_cdev, vmm_dev, DEVICE_MINOR_CNT)) < 0)
-    {
-        return ret;
-    }
-     
-    if (IS_ERR(vmm_class = class_create(THIS_MODULE, "char")))
-    {
-        cdev_del(&vmm_cdev);
-        unregister_chrdev_region(vmm_dev, DEVICE_MINOR_CNT);
-        return PTR_ERR(vmm_class);
+        printk(KERN_INFO "[%s] Chardev allocation is failed!\n", DEVICE_NAME);
+        goto exit;
     }
 
-    if (IS_ERR(dev_ret = device_create(vmm_class, NULL, vmm_dev, NULL, MODULE_NAME)))
+    printk(KERN_INFO "[%s] Chardev major number is %d\n", DEVICE_NAME, MAJOR(dev));
+ 
+    // Initializes a cdev structure
+    cdev_init(&cdev, &device_fops);
+ 
+    // Adds a char device to the system
+    ret = cdev_add(&cdev, dev, DEVICE_MINOR_CNT);
+    if (ret < 0)
     {
-        class_destroy(vmm_class);
-        cdev_del(&vmm_cdev);
-        unregister_chrdev_region(vmm_dev, DEVICE_MINOR_CNT);
-        return PTR_ERR(dev_ret);
+        printk(KERN_INFO "[%s] Unable to add cdev!\n", DEVICE_NAME);
+        goto unregister;
     }
 
-    return 0;
+    // Creates a device class
+    class = class_create(THIS_MODULE, DEVICE_NAME);
+    if (IS_ERR(class))
+    {
+        printk(KERN_INFO "[%s] Unable to create class!\n", DEVICE_NAME);
+        ret = PTR_ERR(class);
+        goto delete;
+    }
+
+    // Creates a device and registers it with sysfs
+    dev_ret = device_create(class, NULL, dev, NULL, DEVICE_NAME);
+    if (IS_ERR(dev_ret))
+    {
+        printk(KERN_INFO "[%s] Unable to create device!\n", DEVICE_NAME);
+        ret = PTR_ERR(dev_ret);
+        goto destroy;
+    }
+
+    return 0; // Root exit point
+
+destroy:
+    class_destroy(class);
+delete:
+    cdev_del(&cdev);
+unregister:
+    unregister_chrdev_region(dev, DEVICE_MINOR_CNT);
+exit:
+    return ret;
 }
 
-int vmm_device_free(void)
+int device_free(void)
 {
-    device_destroy(vmm_class, vmm_dev);
-    class_destroy(vmm_class);
-    cdev_del(&vmm_cdev);
-    unregister_chrdev_region(vmm_dev, DEVICE_MINOR_CNT);
+    // Unregisters and cleans up device
+    device_destroy(class, dev);
+
+    // Destroys a struct class structure
+    class_destroy(class);
+
+    // Removes a char device to the system
+    cdev_del(&cdev);
+
+    // Returns a range of device numbers
+    unregister_chrdev_region(dev, DEVICE_MINOR_CNT);
     return 0;
 }

@@ -4,45 +4,61 @@
 #include <linux/init.h>
 #include <linux/module.h>
 
-#include "../include/private/vmx.h"
+#include "../include/private/cpu.h"
+#include "../include/private/vmm.h"
 #include "../include/private/device.h"
+
 #include "../include/ioctl.h"
 
-
-// Initialize the module - Register the character device 
-static int __init vmm_module_init(void)
+static int __init hypervisor_init(void)
 {
-    if (vmm_device_init() != 0)
+    // Creates character device
+    if (device_init() != 0)
     {
-        printk(KERN_INFO "[%s] Can't init device!\n", MODULE_NAME);
-        vmm_device_free();
+        printk(KERN_INFO "[%s] Can't init device!\n", DEVICE_NAME);
         return -EFAULT;
     }
 
-    if (vmm_vmx_init() != 0)
+    // Checks hw capabilty
+    if (cpu_vmx_support())
     {
-        printk(KERN_INFO "[%s] Can't inti VMX!\n", MODULE_NAME);
-        vmm_device_free();
+        printk(KERN_INFO "[%s] VMX is not supported by this machine!\n", DEVICE_NAME);
         return -EFAULT;
     }
 
-    printk(KERN_INFO "[%s] Successfully init!\n", MODULE_NAME);
+    // Checks bios capabilty
+    if (!cpu_vmx_bios_support())
+    {
+        printk(KERN_INFO "[%s] VMX is not enabled in bios!\n", DEVICE_NAME);
+        return -EFAULT;
+    }
+
+    // Inits virtual machine monitor
+    if (vmm_init() != 0)
+        return -EFAULT;
+
+    // Runs virtual machine on each logical cpu
+    on_each_cpu(vmm_start, NULL, 1);
+
+    printk(KERN_INFO "[%s] Successfully init!\n", DEVICE_NAME);
     return 0;
 }
 
-// Exit - unregister the appropriate file from /proc 
-static void __exit vmm_module_exit(void)
+static void __exit hypervisor_exit(void)
 {
-    vmm_vmx_free();
-    vmm_device_free();
+    on_each_cpu(vmm_stop, NULL, 1);
 
-    printk(KERN_INFO "[%s] Successfully exit!\n", MODULE_NAME);
+    vmm_free();
+
+    device_free();
+
+    printk(KERN_INFO "[%s] Successfully exit!\n", DEVICE_NAME);
     return;
 }
 
-module_init(vmm_module_init);
-module_exit(vmm_module_exit);
+module_init(hypervisor_init); // A Driver initialization entry point
+module_exit(hypervisor_exit); // A driver exit entry point
  
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Markov V.A.");
-MODULE_DESCRIPTION("A simple hypervisor2 module");
+MODULE_DESCRIPTION("A hypervisor type 2 driver");

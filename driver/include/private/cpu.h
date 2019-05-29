@@ -2,11 +2,11 @@
 
 #include "vmm.h"
 
-void vmm_cpu_id_get(struct cpuinfo_x86 *cpu_info);
+void cpu_id_get(struct cpuinfo_x86 *cpu_info);
 
-bool vmm_cpu_vmx_support(void);
-bool vmm_cpu_vmx_bios_support(void);
+bool cpu_vmx_support(void);
+bool cpu_vmx_bios_support(void);
 
-int vmm_cpu_vmxon(vcpu_t *vcpu);
-int vmm_cpu_vmxoff(vcpu_t *vcpu);
-int vmm_cpu_vmclear(vcpu_t *vcpu);
+int cpu_vmx_on(vcpu_t *vcpu);
+int cpu_vmx_off(vcpu_t *vcpu);
+int cpu_vm_clear(vcpu_t *vcpu);

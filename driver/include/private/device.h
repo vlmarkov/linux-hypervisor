@@ -1,4 +1,4 @@
 #pragma once
 
-int vmm_device_init(void);
-int vmm_device_free(void);
+int device_init(void);
+int device_free(void);

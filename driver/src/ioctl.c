@@ -3,28 +3,27 @@
 #include "../include/private/cpu.h"
 #include "../include/ioctl.h"
 
-
-int vmm_ioctl_cpu_id_get(unsigned long arg)
+int ioctl_hypervisor_id_get(unsigned long arg)
 {
     int ret = 0;
-    void __user *_cpuid = (void __user *)arg;
-    vmm_cpuid_t cpuid;
-    struct cpuinfo_x86 c;
+    void __user *user_ptr = (void __user *)arg;
+    hypervisor_id_t hypervisor_id;
+    struct cpuinfo_x86 cpuinfo;
 
-    memset(&c, 0, sizeof(struct cpuinfo_x86));  
-    memset(&cpuid, 0, sizeof(vmm_cpuid_t));
+    memset(&cpuinfo, 0, sizeof(struct cpuinfo_x86));  
+    memset(&hypervisor_id, 0, sizeof(hypervisor_id_t));
 
-    vmm_cpu_id_get(&c);
+    cpu_id_get(&cpuinfo);
 
-    cpuid.ncores = c.booted_cores;
-    cpuid.vmx = cpu_has(&c, X86_FEATURE_VMX) ? 1 : 0;
+    hypervisor_id.ncores = cpuinfo.booted_cores;
+    hypervisor_id.vmx = cpu_has(&cpuinfo, X86_FEATURE_VMX) ? 1 : 0;
 
-    if (c.x86_vendor_id[0])
-        memcpy(&cpuid.vendor_id, &c.x86_vendor_id, 16);  
+    if (cpuinfo.x86_vendor_id[0])
+        memcpy(&hypervisor_id.vendor_id, &cpuinfo.x86_vendor_id, 16);
 
-    if (copy_to_user(_cpuid, &cpuid, sizeof(vmm_cpuid_t)))
+    if (copy_to_user(user_ptr, &hypervisor_id, sizeof(hypervisor_id_t)))
     {
-        pr_warn(KERN_INFO "[%s] Unable to copy to userspace!\n", MODULE_NAME);
+        pr_warn(KERN_INFO "[%s] Unable to copy to userspace!\n", DEVICE_NAME);
         ret = -EFAULT;
     }
 

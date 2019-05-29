@@ -2,15 +2,14 @@
 
 #include "../include/private/vmm.h"
 
-
-static int vmm_phys_page_init(vmpage_t *vmpage)
+static int vmpage_phys_page_init(vmpage_t *vmpage)
 {
-    if (!vmpage)
-        return -1;
+    if (IS_ERR(vmpage))
+        return -EFAULT;
 
     vmpage->page = alloc_page(GFP_KERNEL | __GFP_ZERO);
-    if (!vmpage->page)
-        return -1;
+    if (IS_ERR(vmpage->page))
+        return -ENOMEM;
 
     vmpage->p  = kmap(vmpage->page);
     vmpage->pa = page_to_phys(vmpage->page);
@@ -18,10 +17,10 @@ static int vmm_phys_page_init(vmpage_t *vmpage)
     return 0;
 }
 
-static int vmm_phys_page_free(vmpage_t *vmpage)
+static int vmpage_phys_page_free(vmpage_t *vmpage)
 {
-    if (!vmpage)
-        return -1;
+    if (IS_ERR(vmpage))
+        return -EFAULT;
 
     kunmap(vmpage->page);
     __free_page(vmpage->page);
@@ -33,11 +32,14 @@ static int vmm_phys_page_free(vmpage_t *vmpage)
     return 0;
 }
 
-int vmm_vmpage_init(vcpu_t *vcpu)
+int vmpage_init(vcpu_t *vcpu)
 {
     int cnt = 0;
 
-    if (vmm_phys_page_init(&vcpu->vmxon_region) == 0)
+    if (IS_ERR(vcpu))
+        return -EFAULT;
+
+    if (vmpage_phys_page_init(&vcpu->vmxon_region) == 0)
     {
         cnt++;
     }
@@ -46,7 +48,7 @@ int vmm_vmpage_init(vcpu_t *vcpu)
         return -cnt;
     }
 
-    if (vmm_phys_page_init(&vcpu->vmcs) == 0)
+    if (vmpage_phys_page_init(&vcpu->vmcs) == 0)
     {
         cnt++;
     }
@@ -55,7 +57,7 @@ int vmm_vmpage_init(vcpu_t *vcpu)
         return -cnt;
     }
 
-    if (vmm_phys_page_init(&vcpu->io_bitmap_a) == 0)
+    if (vmpage_phys_page_init(&vcpu->io_bitmap_a) == 0)
     {
         cnt++;
     }
@@ -64,7 +66,7 @@ int vmm_vmpage_init(vcpu_t *vcpu)
         return -cnt;
     }
 
-    if (vmm_phys_page_init(&vcpu->io_bitmap_b) == 0)
+    if (vmpage_phys_page_init(&vcpu->io_bitmap_b) == 0)
     {
         cnt++;
     }
@@ -73,7 +75,7 @@ int vmm_vmpage_init(vcpu_t *vcpu)
         return -cnt;
     }
 
-    if (vmm_phys_page_init(&vcpu->msr_bitmap) == 0)
+    if (vmpage_phys_page_init(&vcpu->msr_bitmap) == 0)
     {
         cnt++;
     }
@@ -85,35 +87,38 @@ int vmm_vmpage_init(vcpu_t *vcpu)
     return cnt;
 }
 
-int vmm_vmpage_free(vcpu_t *vcpu, int cnt)
+int vmpage_free(vcpu_t *vcpu, int cnt)
 {
+    if (IS_ERR(vcpu))
+        return -EFAULT;
+
     if (cnt == 5)
     {
-        vmm_phys_page_free(&vcpu->msr_bitmap);
+        vmpage_phys_page_free(&vcpu->msr_bitmap);
         cnt--;
     }
 
     if (cnt == 4)
     {
-        vmm_phys_page_free(&vcpu->io_bitmap_b);
+        vmpage_phys_page_free(&vcpu->io_bitmap_b);
         cnt--;
     }
 
     if (cnt == 3)
     {
-        vmm_phys_page_free(&vcpu->io_bitmap_a);
+        vmpage_phys_page_free(&vcpu->io_bitmap_a);
         cnt--;
     }
 
     if (cnt == 2)
     {
-        vmm_phys_page_free(&vcpu->vmxon_region);
+        vmpage_phys_page_free(&vcpu->vmxon_region);
         cnt--;
     }
 
     if (cnt == 1)
     {
-        vmm_phys_page_free(&vcpu->vmcs);
+        vmpage_phys_page_free(&vcpu->vmcs);
         cnt--;
     }
 
