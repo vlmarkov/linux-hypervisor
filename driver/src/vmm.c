@@ -61,11 +61,18 @@ void vmm_start(void *unused)
         return;
     }
 
+    // Sets MSR IA32_VMX_BASIC
     vmx_set_cache_capabilities(vcpu);
 
+    /*
+     * Before executing VMXON, software should allocate a naturally aligned
+     * 4-KByte region of memory (VMXON and VMCS) that a logical processor
+     * may use to support VMX operation.
+     */
     if (vmpage_init(vcpu) <= 0)
         return;
 
+    // Sets VMCS revision identifier to VMXON and VMCS regions
     vmx_set_vmxon_revision_id(vcpu);
     vmx_set_vmcs_revision_id(vcpu);
 

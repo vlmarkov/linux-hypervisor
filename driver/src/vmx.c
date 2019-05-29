@@ -6,13 +6,18 @@
 #include "../include/private/cpu.h"
 #include "../include/ioctl.h"
 
-// TODO: description
+/*
+ * vmx_get_vmcs_revision_identifier - Writes MSR IA32_VMX_BASIC VMCS revision
+ * identifier to first 31 bits
+ */
 static u32 vmx_get_vmcs_revision_identifier(void)
 {
     return 0x8fffffff & __rdmsr(IA32_VMX_BASIC);
 }
 
-// TODO: description
+/*
+ * vmx_set_vmxon_revision_id - Writes MSR IA32_VMX_BASIC VMCS revision identifier
+ */
 int vmx_set_vmxon_revision_id(vcpu_t *vcpu)
 {
     if (IS_ERR(vcpu))
@@ -23,7 +28,9 @@ int vmx_set_vmxon_revision_id(vcpu_t *vcpu)
     return 0;
 }
 
-// TODO: description
+/*
+ * vmx_set_vmcs_revision_id - Writes MSR IA32_VMX_BASIC VMCS revision identifier
+ */
 int vmx_set_vmcs_revision_id(vcpu_t *vcpu)
 {
     if (IS_ERR(vcpu))
@@ -34,7 +41,6 @@ int vmx_set_vmcs_revision_id(vcpu_t *vcpu)
     return 0;
 }
 
-// TODO: description
 int vmx_set_cache_capabilities(vcpu_t *vcpu)
 {
     if (IS_ERR(vcpu))
